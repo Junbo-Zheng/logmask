@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Junbo Zheng
+
+# Build
+build/
+out/
+*.o
+*.a
+*.bin
+*.elf
+
+# Editors / IDE
+.vscode/
+.idea/
+*.swp
+compile_commands.json
+.cache/
+
+# OS
+.DS_Store
+
+# AI-skill-generated design specs (docs/superpowers/specs/) — session-local, not project artifacts
+docs/
