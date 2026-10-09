@@ -22,7 +22,7 @@ jobs:
           - os: macos-latest
             cmake-flags: "-DLOGMASK_BUILD_EXAMPLES=ON"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Build
         run: |
@@ -49,7 +49,7 @@ jobs:
           - "-DLOGMASK_FUNC_NAMES"
           - ""
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: "Syntax check (${{ matrix.flags || 'default' }})"
         run: |
