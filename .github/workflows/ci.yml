@@ -1,0 +1,68 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026 Junbo Zheng
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-run:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        # macOS has no POSIX mqueue, so the unix port (mq CLI) is
+        # Linux-only; core + example build everywhere.
+        include:
+          - os: ubuntu-latest
+            cmake-flags: "-DLOGMASK_BUILD_EXAMPLES=ON -DLOGMASK_BUILD_UNIX_PORT=ON -DLOGMASK_USE_MQ=ON"
+          - os: macos-latest
+            cmake-flags: "-DLOGMASK_BUILD_EXAMPLES=ON"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build
+        run: |
+          set -euo pipefail
+          cmake -B build ${{ matrix.cmake-flags }}
+          cmake --build build
+
+      - name: Run example (masking actually masks)
+        run: |
+          set -euo pipefail
+          OUT=$(./build/logmask_example)
+          echo "$OUT"
+          echo "$OUT" | grep -q "link up$"
+          echo "$OUT" | grep -q "link lost"
+          ! echo "$OUT" | grep -q "silenced)"
+
+
+  syntax-variants:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        flags:
+          - "-DLOGMASK_USE_MQ"
+          - "-DLOGMASK_FUNC_NAMES"
+          - ""
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: "Syntax check (${{ matrix.flags || 'default' }})"
+        run: |
+          set -euo pipefail
+          # src files get the example taxonomy via -D; the examples carry
+          # their own config.h (a -D here would be a macro redefinition),
+          # and examples/server.c always needs the mq transport
+          LIST='LOGMASK_MODULE_LIST=X(DEFAULT,default) X(BT,bt) X(UI,ui)'
+          for f in src/*.c; do
+            gcc -fsyntax-only -std=gnu11 -Wall -Wextra -Werror \
+              -I include -D"$LIST" ${{ matrix.flags }} "$f"
+          done
+          gcc -fsyntax-only -std=gnu11 -Wall -Wextra -Werror \
+            -I include ${{ matrix.flags }} examples/simple.c
+          gcc -fsyntax-only -std=gnu11 -Wall -Wextra -Werror \
+            -I include -DLOGMASK_USE_MQ ${{ matrix.flags }} examples/server.c
